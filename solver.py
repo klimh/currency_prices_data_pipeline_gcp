@@ -1,15 +1,18 @@
 import requests
-import json
-from tabulate import tabulate
+#import json
+# from tabulate import tabulate
 import pandas as pd
 
 api_nbp = "https://api.nbp.pl/api/exchangerates/tables/A/"
 
-response = requests.get(api_nbp)
-nbp_data = response.json()
+response = requests.get(api_nbp).json()
 
-rates = nbp_data[0]['rates']
+df = pd.DataFrame(response[0]['rates'])
+df = df[['code','currency','mid']]
 
-print(tabulate(rates, headers = "keys", tablefmt = "rounded_grid"))
+print(df.to_string(index=False))
+
+# rates = response[0]['rates']
+# print(tabulate(rates, headers = "keys", tablefmt = "github"))
 
 #print(json.dumps(nbp_data, indent=4, sort_keys=True))
