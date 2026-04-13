@@ -1,4 +1,4 @@
-FROM python:3.13
+FROM python:3.13-slim
 WORKDIR /app
 
 # Install the application dependencies
@@ -12,4 +12,6 @@ COPY solver.py .
 RUN useradd -m myuser
 USER myuser
 
-CMD ["python", "solver.py"]
+ENV PORT 8080
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
