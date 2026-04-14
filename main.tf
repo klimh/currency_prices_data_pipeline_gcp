@@ -61,3 +61,39 @@ resource "google_storage_bucket_iam_member" "run_storage_writer" {
   role   = "roles/storage.objectCreator"
   member = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
 }
+
+resource "google_project_service" "scheduler_api" {
+  service = "cloudscheduler.googleapis.com"
+  disable_on_refresh_attributes = true
+}
+
+resource "google_cloud_scheduler_job" "nbp_job" {
+  name             = "nbp-daily-ingest"
+  description      = "Downloading data and write them in GCS"
+  schedule         = "0 9 * * *"
+  time_zone        = "Europe/Warsaw"
+  attempt_deadline = "320s"
+
+  http_target {
+    http_method = "GET"
+    uri         = google_cloud_run_v2_service.nbp_service.uri
+  }
+
+  depends_on = [google_project_service.scheduler_api]
+}
+
+resource "google_bigquery_dataset" "nbp_dataset" {
+  dataset_id = "nbp_analytics"
+  location   = "europe-central2"
+}
+
+resource "google_bigquery_table" "nbp_external_table" {
+  dataset_id = google_bigquery_dataset.nbp_dataset.dataset_id
+  table_id   = "exchange_rates_raw"
+
+  external_data_configuration {
+    autodetect    = true
+    source_format = "JSON"
+    source_uris   = ["gs://${google_storage_bucket.nbp_data_lake.name}/*.json"]
+  }
+}
