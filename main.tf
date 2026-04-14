@@ -13,6 +13,7 @@ resource "google_artifact_registry_repository" "nbp_repo" {
 resource "google_cloud_run_v2_service" "nbp_service" {
   name     = "nbp-api"
   location = "europe-central2"
+  deletion_protection = false
 
   template {
     containers {

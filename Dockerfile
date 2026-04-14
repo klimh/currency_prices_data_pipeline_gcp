@@ -12,6 +12,6 @@ COPY solver.py .
 RUN useradd -m myuser
 USER myuser
 
-ENV PORT 8080
+ENV PORT = 8080
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn solver:app --host 0.0.0.0 --port ${PORT}"]
