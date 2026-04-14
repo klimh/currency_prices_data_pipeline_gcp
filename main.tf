@@ -41,6 +41,10 @@ resource "google_cloud_run_v2_service" "nbp_service" {
           memory = "512Mi"
         }
       }
+      env {
+        name  = "BUCKET_NAME"
+        value = google_storage_bucket.nbp_data_lake.name
+      }
     }
   }
 }
