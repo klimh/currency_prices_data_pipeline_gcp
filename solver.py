@@ -17,6 +17,7 @@ def fetch_nbp_data():
     response.raise_for_status()
     return response.json()
 
+#print(fetch_nbp_data()[0])
 
 def save_to_gcs(data):
     if not BUCKET_NAME:
@@ -30,8 +31,10 @@ def save_to_gcs(data):
         filename = f"rates_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.json"
         blob = bucket.blob(filename)
 
+        json_line = json.dumps(data)
+
         blob.upload_from_string(
-            data=json.dumps(data, indent=4),
+            data=json_line,
             content_type='application/json'
         )
         return filename
@@ -42,19 +45,19 @@ def save_to_gcs(data):
 
 @app.get("/")
 def get_and_save_data():
-    data = fetch_nbp_data()
+    data = fetch_nbp_data()[0]
     saved_file = save_to_gcs(data)
 
     return {
         "status": "success",
         "file_saved": saved_file,
-        "data": data[0]['rates']
+        "data": data['rates']
     }
 
 
 @app.get("/table")
 def get_formatted_table():
-    data = fetch_nbp_data()
-    rates = data[0]['rates']
+    data = fetch_nbp_data()[0]
+    rates = data['rates']
     df = pd.DataFrame(rates)
     return df[['code', 'currency', 'mid']].to_dict(orient="records")
