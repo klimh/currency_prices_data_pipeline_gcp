@@ -28,8 +28,8 @@ resource "google_storage_bucket" "nbp_data_lake" {
 }
 
 resource "google_cloud_run_v2_service" "nbp_service" {
-  name     = "nbp-api"
-  location = "europe-central2"
+  name                = "nbp-api"
+  location            = "europe-central2"
   deletion_protection = false
 
   template {
@@ -63,8 +63,8 @@ resource "google_storage_bucket_iam_member" "run_storage_writer" {
 }
 
 resource "google_project_service" "scheduler_api" {
-  service = "cloudscheduler.googleapis.com"
-  disable_on_refresh_attributes = true
+  service            = "cloudscheduler.googleapis.com"
+  disable_on_destroy = false
 }
 
 resource "google_cloud_scheduler_job" "nbp_job" {
@@ -84,7 +84,7 @@ resource "google_cloud_scheduler_job" "nbp_job" {
 
 resource "google_bigquery_dataset" "nbp_dataset" {
   dataset_id = "nbp_analytics"
-  location   = "europe-central2"
+  location   = "europe-west1"
 }
 
 resource "google_bigquery_table" "nbp_external_table" {
@@ -93,7 +93,32 @@ resource "google_bigquery_table" "nbp_external_table" {
 
   external_data_configuration {
     autodetect    = true
-    source_format = "JSON"
+    source_format = "NEWLINE_DELIMITED_JSON"
     source_uris   = ["gs://${google_storage_bucket.nbp_data_lake.name}/*.json"]
   }
 }
+
+#tu wlaczamy uslugi polaczen bugquery i aiplatform
+resource "google_project_service" "services" {
+  for_each = toset([
+    "bigqueryconnection.googleapis.com",
+    "aiplatform.googleapis.com"
+  ])
+  service = each.key
+}
+
+#tworzenie polaczenia bigquery <-> vertex ai
+resource "google_bigquery_connection" "vertex_ai_conn" {
+  connection_id = "vertex-ai-connection"
+  project       = var.project_id
+  location      = "europe-west1"
+  cloud_resource {}
+}
+
+#nadanie polaczenie dla service account ktore bedzie mialo dostep do vertex ai
+resource "google_project_iam_member" "connection_permission" {
+  project = var.project_id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:${google_bigquery_connection.vertex_ai_conn.cloud_resource[0].service_account_id}" #interpolacja
+}
+
