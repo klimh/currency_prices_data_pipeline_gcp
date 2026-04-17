@@ -45,6 +45,10 @@ resource "google_cloud_run_v2_service" "nbp_service" {
         name  = "BUCKET_NAME"
         value = google_storage_bucket.nbp_data_lake.name
       }
+      env {
+        name  = "PROJECT_ID"
+        value = var.project_id
+      }
     }
   }
 }
