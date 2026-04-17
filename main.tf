@@ -96,10 +96,52 @@ resource "google_bigquery_table" "nbp_external_table" {
   table_id   = "exchange_rates_raw"
 
   external_data_configuration {
-    autodetect    = true
+    autodetect    = false
     source_format = "NEWLINE_DELIMITED_JSON"
     source_uris   = ["gs://${google_storage_bucket.nbp_data_lake.name}/*.json"]
   }
+
+  schema = <<EOF
+[
+  {
+    "name": "table",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "no",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "effectiveDate",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "rates",
+    "type": "RECORD",
+    "mode": "REPEATED",
+    "fields": [
+      {
+        "name": "currency",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "code",
+        "type": "STRING",
+        "mode": "NULLABLE"
+      },
+      {
+        "name": "mid",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+      }
+    ]
+  }
+]
+EOF
 }
 
 #tu wlaczamy uslugi polaczen bugquery i aiplatform
