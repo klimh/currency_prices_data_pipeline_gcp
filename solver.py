@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException
 from google.cloud import storage
 from google.cloud import logging as cloud_logging
 from google.cloud import bigquery
+import google.generativeai as genai
 
 try:
     logging_client = cloud_logging.Client()
@@ -133,3 +134,56 @@ def analyze_data():
     except Exception as e:
         logger.error("Error querying BigQuery in /analyze endpoint", exc_info=True)
         raise HTTPException(status_code=500, detail="Can't fetch from Data Warehouse")
+
+@app.get("/ask")
+def ask_ai(q: str = "Jakie waluty mają kurs powyżej 4 złotych?"):
+    """
+    Implementation of simple RAG (Retrieval-Augmented Generation) with Gemini.
+    """
+    if not PROJECT_ID:
+        raise HTTPException(status_code=500, detail="PROJECT_ID is not set")
+        
+    try:
+        # step 1: Pobranie (Retrieval)
+        client = bigquery.Client(project=PROJECT_ID)
+        query = f"""
+        SELECT rate.code, rate.currency, rate.mid
+        FROM `{PROJECT_ID}.nbp_analytics.exchange_rates_raw` t,
+        UNNEST(t.rates) as rate
+        """
+        results = client.query(query).result()
+        
+        # Budowanie kontekstu
+        context_data = [f"{row.code} ({row.currency}): {row.mid}" for row in results]
+        context_text = "\\n".join(context_data)
+        
+        # Krok 2: Generacja z użyciem LLM(Generation) - uzywamy oficjalnego API z biblioteki google-generativeai
+        GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+        if not GEMINI_API_KEY:
+            raise HTTPException(status_code=500, detail="GEMINI_API_KEY is not set in environment variables")
+            
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        
+        prompt = f"""
+        Jesteś pomocnym asystentem finansowym. 
+        Odpowiedz na poniższe pytanie bazując TYLKO na dostarczonym kontekście (dzisiejsza tabela NBP).
+        Bądź zwięzły i profesjonalny.
+        
+        Kontekst danych:
+        {context_text}
+        
+        Pytanie użytkownika: {q}
+        """
+        
+        llm_response = model.generate_content(prompt)
+        
+        logger.info(f"Successfully answered AI question: {q}")
+        return {
+            "question": q,
+            "ai_answer": llm_response.text
+        }
+        
+    except Exception as e:
+        logger.error("Error in AI /ask endpoint", exc_info=True)
+        raise HTTPException(status_code=500, detail="Agent AI encountered an error")

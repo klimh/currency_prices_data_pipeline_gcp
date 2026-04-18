@@ -5,3 +5,4 @@ uvicorn
 google-cloud-storage
 google-cloud-bigquery
 google-cloud-logging
+google-generativeai
