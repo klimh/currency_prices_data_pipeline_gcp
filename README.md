@@ -7,6 +7,10 @@ Zbudowałem tu prosty, ale kompletny potok danych (data pipeline), który codzie
 Głównym celem jest regularne zasilanie bazy spójnymi danymi finansowymi bez mojej ingerencji. 
 Aplikacja odpytuje publiczne API NBP o tabelę kursów średnich, a następnie ładuje wyciągnięte informacje do cloudowego storage'u jako pliki JSON (prosty data lake). Na koniec wszystko jest spięte z hurtownią danych Google BigQuery, co pozwala mi od razu wyciągać informacje za pomocą zwykłych zapytań SQL.
 
+Oprócz potoku danych, aplikacja wystawia również API z analitycznymi endpointami:
+* `/analyze` - obrazuje podejście Data Engineering. Odpytuje bezpośrednio hurtownię BigQuery, parsuje zagnieżdżone struktury (`UNNEST`) i zwraca 5 walut o najwyższym kursie.
+* `/ask` - implementacja **AI Asystenta we wzorcu RAG** (Retrieval-Augmented Generation)! Wykorzystuje model **Gemini 1.5 Flash**. Aplikacja wyciąga dzisiejsze kursy walut z BigQuery, buduje z nich kontekst i wysyła do modelu AI, dzięki czemu można mu zadawać pytania w języku naturalnym (np. "Jakie waluty mają kurs powyżej 4 PLN?").
+
 ## Architektura i narzędzia 
 Całość infrastruktury napisałem w **Terraformie** (`main.tf`), żeby uniknąć wyklikiwania usług krok po kroku w konsoli(chociaż tak też czasami lubię robić). Dzięki temu mogłem też łatwo psuć i stawiać wszystko od nowa w trakcie dewelopmentu.
 
@@ -18,7 +22,7 @@ Oto czego dokładnie użyłem:
 * **Google Cloud Scheduler** - taki chmurowy "cron". Skonfigurowany tak, by co rano o 9:00 uderzał w moją apkę na Cloud Runie.
 * **Google Cloud Storage (GCS)** - pełni tu rolę tzw. "Data Lake". Wpada tu każdy dzienny zrzut walut w formacie JSONL (newline-delimited JSON!!). Bucket ma ustawioną regułę lifecycle na kasowanie starych plików.
 * **Google BigQuery** - baza odpytująca bezpośrednio pliki JSON z mojego builda na GCSie (external table). Dla mnie to jak prawdziwy SQL tylko czytający prosto z plików.
-* Do tego spiąłem BigQuery z **Vertex AI** i rozwijam to w kierunku, by w przyszłości móc przepuścić przez te dane jakiś model ML.
+* **Generative AI (Gemini / Vertex AI)** - to już nie tylko plany! Zaimplementowałem wzorzec **RAG**, który łączy bazę danych (BigQuery) z najnowszym modelem językowym Gemini. Terraform również zarządza połączeniami do AI (nadaje role dla Vertex AI).
 
 ## Jak to uruchomić u siebie?
 Jeśli ktoś chciałby postawić dokładną kopię mojej architektury:

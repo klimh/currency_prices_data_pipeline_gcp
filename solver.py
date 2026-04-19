@@ -136,7 +136,7 @@ def analyze_data():
         raise HTTPException(status_code=500, detail="Can't fetch from Data Warehouse")
 
 @app.get("/ask")
-def ask_ai(q: str = "Jakie waluty mają kurs powyżej 4 złotych?"):
+def ask_ai(q: str = "Which currencies have an exchange rate above 4 PLN?"):
     """
     Implementation of simple RAG (Retrieval-Augmented Generation) with Gemini.
     """
@@ -144,7 +144,7 @@ def ask_ai(q: str = "Jakie waluty mają kurs powyżej 4 złotych?"):
         raise HTTPException(status_code=500, detail="PROJECT_ID is not set")
         
     try:
-        # step 1: Pobranie (Retrieval)
+        # Pobranie (Retrieval)
         client = bigquery.Client(project=PROJECT_ID)
         query = f"""
         SELECT rate.code, rate.currency, rate.mid
@@ -156,8 +156,8 @@ def ask_ai(q: str = "Jakie waluty mają kurs powyżej 4 złotych?"):
         # Budowanie kontekstu
         context_data = [f"{row.code} ({row.currency}): {row.mid}" for row in results]
         context_text = "\\n".join(context_data)
-        
-        # Krok 2: Generacja z użyciem LLM(Generation) - uzywamy oficjalnego API z biblioteki google-generativeai
+    
+        # Generation with LLM - using official API from google-generativeai library
         GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
         if not GEMINI_API_KEY:
             raise HTTPException(status_code=500, detail="GEMINI_API_KEY is not set in environment variables")
@@ -166,14 +166,14 @@ def ask_ai(q: str = "Jakie waluty mają kurs powyżej 4 złotych?"):
         model = genai.GenerativeModel("gemini-1.5-flash")
         
         prompt = f"""
-        Jesteś pomocnym asystentem finansowym. 
-        Odpowiedz na poniższe pytanie bazując TYLKO na dostarczonym kontekście (dzisiejsza tabela NBP).
-        Bądź zwięzły i profesjonalny.
+        You are a helpful financial assistant. 
+        Answer the following question based ONLY on the provided context (today's NBP table).
+        Be concise and professional.
         
-        Kontekst danych:
+        Context data:
         {context_text}
         
-        Pytanie użytkownika: {q}
+        User question: {q}
         """
         
         llm_response = model.generate_content(prompt)
