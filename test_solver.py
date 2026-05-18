@@ -38,7 +38,7 @@ def test_get_formatted_table(mock_fetch):
 def test_get_and_save_data(mock_fetch, mock_save):
     mock_fetch.return_value = mock_nbp_data
     mock_save.return_value = "mocked_file.json"
-    
+
     response = client.get("/")
     assert response.status_code == 200
     data = response.json()
@@ -55,15 +55,15 @@ def test_save_to_gcs(mock_storage_client):
     mock_client_instance.get_bucket.return_value = mock_bucket
     mock_blob = MagicMock()
     mock_bucket.blob.return_value = mock_blob
-    
+
     data_to_save = mock_nbp_data[0]
-    
+
     filename = save_to_gcs(data_to_save)
-    
+
     assert filename is not None
     assert filename.startswith("rates_")
     assert filename.endswith(".json")
-    
+
     mock_storage_client.assert_called_once()
     mock_client_instance.get_bucket.assert_called_once_with("test_bucket")
     mock_bucket.blob.assert_called_once_with(filename)

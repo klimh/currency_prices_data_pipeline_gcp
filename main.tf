@@ -167,4 +167,3 @@ resource "google_project_iam_member" "connection_permission" {
   role    = "roles/aiplatform.user"
   member  = "serviceAccount:${google_bigquery_connection.vertex_ai_conn.cloud_resource[0].service_account_id}" #interpolacja
 }
-

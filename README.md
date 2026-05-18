@@ -1,17 +1,17 @@
-# NBP Currency Data Pipeline 
+# NBP Currency Data Pipeline
 
-To jest jeden z moich projektów do portfolio, w którym uczyłem się w praktyce pracy z Google Cloud Platform (GCP) i narzędzi z kategorii Infrastructure as Code (IaC).  
+To jest jeden z moich projektów do portfolio, w którym uczyłem się w praktyce pracy z Google Cloud Platform (GCP) i narzędzi z kategorii Infrastructure as Code (IaC).
 Zbudowałem tu prosty, ale kompletny potok danych (data pipeline), który codziennie automatycznie pobiera kursy walut z API Narodowego Banku Polskiego i przygotowuje je do analityki w chmurze.
 
 ## Co robi ten projekt?
-Głównym celem jest regularne zasilanie bazy spójnymi danymi finansowymi bez mojej ingerencji. 
+Głównym celem jest regularne zasilanie bazy spójnymi danymi finansowymi bez mojej ingerencji.
 Aplikacja odpytuje publiczne API NBP o tabelę kursów średnich, a następnie ładuje wyciągnięte informacje do cloudowego storage'u jako pliki JSON (prosty data lake). Na koniec wszystko jest spięte z hurtownią danych Google BigQuery, co pozwala mi od razu wyciągać informacje za pomocą zwykłych zapytań SQL.
 
 Oprócz potoku danych, aplikacja wystawia również API z analitycznymi endpointami:
 * `/analyze` - obrazuje podejście Data Engineering. Odpytuje bezpośrednio hurtownię BigQuery, parsuje zagnieżdżone struktury (`UNNEST`) i zwraca 5 walut o najwyższym kursie.
 * `/ask` - implementacja **AI Asystenta we wzorcu RAG** (Retrieval-Augmented Generation)! Wykorzystuje model **Gemini 1.5 Flash**. Aplikacja wyciąga dzisiejsze kursy walut z BigQuery, buduje z nich kontekst i wysyła do modelu AI, dzięki czemu można mu zadawać pytania w języku naturalnym (np. "Jakie waluty mają kurs powyżej 4 PLN?").
 
-## Architektura i narzędzia 
+## Architektura i narzędzia
 Całość infrastruktury napisałem w **Terraformie** (`main.tf`), żeby uniknąć wyklikiwania usług krok po kroku w konsoli(chociaż tak też czasami lubię robić). Dzięki temu mogłem też łatwo psuć i stawiać wszystko od nowa w trakcie dewelopmentu.
 
 Oto czego dokładnie użyłem:

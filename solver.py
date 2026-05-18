@@ -61,7 +61,7 @@ def get_and_save_data():
     try:
         data = fetch_nbp_data()[0]
         saved_file = save_to_gcs(data)
-        
+
         if not saved_file:
             raise Exception("Failed to save data to GCS bucket")
 
@@ -107,7 +107,7 @@ def analyze_data():
 
     try:
         client = bigquery.Client(project=PROJECT_ID)
-        
+
         # Query in BQ that unpacks (UNNEST) the nested(zagniezdzona) structure 'rates' from the JSON file
         query = f"""
         SELECT rate.code, rate.currency, rate.mid
@@ -116,10 +116,10 @@ def analyze_data():
         ORDER BY rate.mid DESC
         LIMIT 5
         """
-        
+
         query_job = client.query(query)
         results = query_job.result()
-        
+
         top_currencies = []
         for row in results:
             top_currencies.append({
@@ -127,10 +127,10 @@ def analyze_data():
                 "currency": row.currency,
                 "mid": row.mid
             })
-            
+
         logger.info("Successfully fetched analyzed data from BigQuery")
         return {"top_5_currencies": top_currencies}
-        
+
     except Exception as e:
         logger.error("Error querying BigQuery in /analyze endpoint", exc_info=True)
         raise HTTPException(status_code=500, detail="Can't fetch from Data Warehouse")
@@ -142,7 +142,7 @@ def ask_ai(q: str = "Which currencies have an exchange rate above 4 PLN?"):
     """
     if not PROJECT_ID:
         raise HTTPException(status_code=500, detail="PROJECT_ID is not set")
-        
+
     try:
         # Pobranie (Retrieval)
         client = bigquery.Client(project=PROJECT_ID)
@@ -152,38 +152,38 @@ def ask_ai(q: str = "Which currencies have an exchange rate above 4 PLN?"):
         UNNEST(t.rates) as rate
         """
         results = client.query(query).result()
-        
+
         # Budowanie kontekstu
         context_data = [f"{row.code} ({row.currency}): {row.mid}" for row in results]
         context_text = "\\n".join(context_data)
-    
+
         # Generation with LLM - using official API from google-generativeai library
         GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
         if not GEMINI_API_KEY:
             raise HTTPException(status_code=500, detail="GEMINI_API_KEY is not set in environment variables")
-            
+
         genai.configure(api_key=GEMINI_API_KEY)
         model = genai.GenerativeModel("gemini-1.5-flash")
-        
+
         prompt = f"""
-        You are a helpful financial assistant. 
+        You are a helpful financial assistant.
         Answer the following question based ONLY on the provided context (today's NBP table).
         Be concise and professional.
-        
+
         Context data:
         {context_text}
-        
+
         User question: {q}
         """
-        
+
         llm_response = model.generate_content(prompt)
-        
+
         logger.info(f"Successfully answered AI question: {q}")
         return {
             "question": q,
             "ai_answer": llm_response.text
         }
-        
+
     except Exception as e:
         logger.error("Error in AI /ask endpoint", exc_info=True)
         raise HTTPException(status_code=500, detail="Agent AI encountered an error")

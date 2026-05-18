@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__)
 
 def fetch_historical_data(days=255):
     """
-    Pobiera ostatnie N tabel (dni roboczych) z API NBP. 
-    Z dokumentacji wynika ze max to 255.
+    Pobiera ostatnie N tabel (dni roboczych) z API NBP
+    Z dokumentacji wynika ze max to 255
     """
     api_url = f"https://api.nbp.pl/api/exchangerates/tables/A/last/{days}/"
     logger.info(f"Pobieram dane historyczne z ostatnich {days} tabel...")
@@ -19,12 +19,12 @@ def fetch_historical_data(days=255):
 
 def main():
     if not os.getenv("BUCKET_NAME"):
-        logger.error("Please set BUCKET_NAME before running the historical load script.")
+        logger.error("Please set BUCKET_NAME before running the historical load script")
         return
 
     try:
         tables = fetch_historical_data()
-        logger.info(f"Udalo sie pobrac {len(tables)} tabel.")
+        logger.info(f"Udalo sie pobrac {len(tables)} tabel")
 
         success_count = 0
         for table in tables:
@@ -35,7 +35,7 @@ def main():
             else:
                 logger.error(f"Nie udalo sie zapisać danych dla {table['effectiveDate']}")
 
-        logger.info(f"Koniec. Zapisano {success_count}/{len(tables)} plikow w Storage.")
+        logger.info(f"Koniec. Zapisano {success_count}/{len(tables)} plikow w Storage")
     except Exception as e:
         logger.error(f"Blad podczas ladowania historii: {e}", exc_info=True)
 
